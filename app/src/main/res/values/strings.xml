@@ -5,6 +5,8 @@
     <string name="title_activity_detail">DetailActivity</string>
     <string name="title_activity_settings">SettingsActivity</string>
 
+    <string name="action_share">Share this!!</string>
+
     <!-- Strings related to Settings -->
 
     <!-- Example General settings -->
