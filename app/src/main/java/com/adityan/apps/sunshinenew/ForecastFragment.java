@@ -1,6 +1,10 @@
 package com.adityan.apps.sunshinenew;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.Preference;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -11,8 +15,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,7 +27,7 @@ import java.util.List;
 /**
  * Created by aditya on 11/30/15.
  */
-public class ForecastFragment extends Fragment {
+public class ForecastFragment extends Fragment implements ResultsListener{
 
 
     private ArrayAdapter<String> mForecastAdapter;
@@ -40,14 +46,37 @@ public class ForecastFragment extends Fragment {
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate(R.menu.forecast_fragment,menu);
+        inflater.inflate(R.menu.forecast_fragment, menu);
     }
+
+    @Override
+    public void onStart() {
+        // Here, onStart of this Fragment, you can refresh Weather
+        super.onStart();
+        updateWeather();
+    }
+
+    public void updateWeather(){
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        weatherTask.setOnResultsListener(this);
+        weatherTask.setTaskMContext(this.getContext());
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String locationQuery = "Moscow,ru";
+        locationQuery = prefs.getString(getString(R.string.pref_location_key),getString(R.string.pref_location_default));
+        weatherTask.execute(locationQuery);
+    }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int selectedId = item.getItemId();
         if (selectedId==R.id.action_refresh){
+            updateWeather();
             return true;
+        }
+        if (selectedId==R.id.action_settings){
+            Intent intent = new Intent(getActivity(),SettingsActivity.class);
+            startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
     }
@@ -75,8 +104,23 @@ public class ForecastFragment extends Fragment {
 
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         ListView mlistView = (ListView) rootView.findViewById(R.id.listview_forecast);
+        // Attach our Adapter to the ListView so it can automatically create ListView.
         mlistView.setAdapter(mForecastAdapter);
+        mlistView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String forecastForPosition = mForecastAdapter.getItem(position);
+//                Toast.makeText(getActivity(),forecastForPosition,Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(getActivity(),DetailActivity.class).putExtra(Intent.EXTRA_TEXT,forecastForPosition);
+                startActivity(intent);
+            }
+        });
         return rootView;
     }
 
+    @Override
+    public void onResultsSucceeded(String[] results) {
+        mForecastAdapter.clear();
+        mForecastAdapter.addAll(results);
+    }
 }
